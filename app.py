@@ -6,6 +6,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from functools import wraps
 import random
 import json
+import os
 
 app = Flask(__name__)
 app.secret_key = 'pesto_e_pao_chave_secreta_super_segura'
