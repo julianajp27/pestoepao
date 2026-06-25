@@ -24,7 +24,7 @@ def formata_moeda(valor):
 # ==========================================
 # CONFIGURAÇÃO DO BANCO DE DADOS (MONGODB)
 # ==========================================
-MONGO_URI = "mongodb+srv://admin_pesto:olQ3npTBiTULokQF@cluster0.rzuefgn.mongodb.net/?appName=Cluster0"
+MONGO_URI = os.environ.get('MONGO_URI')
 
 try:
     client = MongoClient(MONGO_URI)
