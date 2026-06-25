@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Pesto e Pão</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Arial', sans-serif; }
+        body { background-color: #f4f7f6; display: flex; height: 100vh; justify-content: center; align-items: center; }
+        .login-container { background: white; padding: 40px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 100%; max-width: 400px; }
+        .logo-header { text-align: center; margin-bottom: 30px; color: #2c3e50; }
+        .logo-header i { color: #27ae60; font-size: 40px; margin-bottom: 10px; }
+        .form-group { margin-bottom: 20px; position: relative; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: bold; color: #7f8c8d; font-size: 14px; }
+        .form-group input { width: 100%; padding: 12px; padding-right: 40px; border: 1px solid #ccc; border-radius: 4px; font-size: 16px; }
+        .form-group .btn-eye { position: absolute; right: 10px; top: 35px; background: none; border: none; cursor: pointer; color: #95a5a6; font-size: 18px; }
+        .btn-submit { width: 100%; padding: 12px; background-color: #27ae60; border: none; color: white; font-size: 16px; font-weight: bold; border-radius: 4px; cursor: pointer; transition: background 0.2s; }
+        .btn-submit:hover { background-color: #219653; }
+        .forgot-link { display: block; text-align: center; margin-top: 15px; color: #2980b9; text-decoration: none; font-size: 14px; }
+        .forgot-link:hover { text-decoration: underline; }
+        
+        /* Estilos dos Avisos (Flash) */
+        .flash-msg { padding: 12px; margin-bottom: 20px; border-radius: 4px; color: white; text-align: center; font-weight: bold; }
+        .flash-success { background-color: #27ae60; }
+        .flash-error { background-color: #e74c3c; }
+
+        /* Janela Modal de Recuperação */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 1000; }
+        .modal-content { background: white; padding: 30px; border-radius: 8px; width: 90%; max-width: 400px; position: relative; }
+        .close-modal { position: absolute; right: 15px; top: 15px; font-size: 20px; cursor: pointer; color: #95a5a6; }
+    </style>
+</head>
+<body>
+
+<div class="login-container">
+    <div class="logo-header">
+        <i class="fa-solid fa-leaf"></i>
+        <h2>Pesto e Pão</h2>
+        <p>Painel Administrativo</p>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="flash-msg flash-{{ 'success' if category == 'success' else 'error' }}">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <form action="/login" method="POST">
+        <div class="form-group">
+            <label for="username">Usuário (Apelido)</label>
+            <input type="text" id="username" name="username" placeholder="Ex: pesto&pao" required>
+        </div>
+
+        <div class="form-group">
+            <label for="password">Senha</label>
+            <input type="password" id="password" name="password" placeholder="Sua senha" required>
+            <button type="button" class="btn-eye" onclick="toggleSenha('password', 'eye-icon')">
+                <i id="eye-icon" class="fa-solid fa-eye"></i>
+            </button>
+        </div>
+
+        <button type="submit" class="btn-submit">Entrar no Sistema</button>
+    </form>
+
+    <a href="#" class="forgot-link" onclick="abrirModal()">Esqueci minha senha</a>
+</div>
+
+<div id="modalRecuperacao" class="modal">
+    <div class="modal-content">
+        <span class="close-modal" onclick="fecharModal()">&times;</span>
+        <h3 style="margin-bottom: 15px; color: #2c3e50;"><i class="fa-solid fa-key"></i> Recuperar Senha</h3>
+        
+        <div id="etapa-usuario">
+            <p style="font-size: 14px; color: #7f8c8d; margin-bottom: 15px;">Informe seu usuário. Enviaremos um código de verificação para o e-mail cadastrado.</p>
+            <div class="form-group">
+                <label for="username_recuperacao">Usuário *</label>
+                <input type="text" id="username_recuperacao" placeholder="Ex: pesto&pao">
+            </div>
+            <button type="button" class="btn-submit" onclick="enviarCodigoEmail()">Enviar Código por E-mail</button>
+        </div>
+
+        <form id="etapa-redefinir" action="/redefinir_senha" method="POST" style="display: none;" onsubmit="return validarNovaSenha()">
+            <p style="font-size: 14px; color: #27ae60; margin-bottom: 15px; font-weight: bold;"><i class="fa-solid fa-paper-plane"></i> Código enviado! Verifique sua caixa de entrada.</p>
+            
+            <div class="form-group">
+                <label for="codigo_sms">Código de Verificação *</label>
+                <input type="text" id="codigo_sms" name="codigo_sms" placeholder="Digite os 6 dígitos" required>
+            </div>
+
+            <div class="form-group">
+                <label for="nova_senha">Nova Senha *</label>
+                <input type="password" id="nova_senha" name="nova_senha" onkeyup="verificarRequisitos()" placeholder="Mínimo 6 caracteres" required>
+                <button type="button" class="btn-eye" onclick="toggleSenha('nova_senha', 'eye-icon2')">
+                    <i id="eye-icon2" class="fa-solid fa-eye"></i>
+                </button>
+                <span id="requisito-msg" style="font-size: 11px; color: #e74c3c; display: block; margin-top: 5px;">A senha deve ter números, letras (1 maiúscula, 1 minúscula) e 1 caractere especial (*, @, #, etc).</span>
+            </div>
+
+            <div class="form-group">
+                <label for="confirma_senha">Confirmar Nova Senha *</label>
+                <input type="password" id="confirma_senha" placeholder="Repita a nova senha" required>
+            </div>
+
+            <button type="submit" class="btn-submit" style="background-color: #2980b9;">Alterar Senha</button>
+        </form>
+    </div>
+</div>
+
+<script>
+    // Função para mostrar/esconder a senha (o olhinho)
+    function toggleSenha(inputId, eyeId) {
+        let input = document.getElementById(inputId);
+        let icone = document.getElementById(eyeId);
+        if (input.type === "password") {
+            input.type = "text";
+            icone.classList.remove("fa-eye");
+            icone.classList.add("fa-eye-slash");
+        } else {
+            input.type = "password";
+            icone.classList.remove("fa-eye-slash");
+            icone.classList.add("fa-eye");
+        }
+    }
+
+    // Funções do Modal
+    function abrirModal() { document.getElementById('modalRecuperacao').style.display = 'flex'; }
+    function fecharModal() { document.getElementById('modalRecuperacao').style.display = 'none'; }
+
+    // Envio assíncrono para o Python gerar o código
+    function enviarCodigoEmail() {
+        let user = document.getElementById('username_recuperacao').value;
+        if(!user) { alert("Por favor, digite o usuário."); return; }
+
+        // Faz uma requisição rápida para o backend
+        let formData = new FormData();
+        formData.append('username_recuperacao', user);
+
+        fetch('/esqueci_senha', { method: 'POST', body: formData })
+        .then(response => response.text())
+        .then(data => {
+            if (data === "codigo_enviado") {
+                document.getElementById('etapa-usuario').style.display = 'none';
+                document.getElementById('etapa-redefinir').style.display = 'block';
+            } else {
+                alert("Usuário não encontrado no sistema.");
+            }
+        });
+    }
+
+    // Validação em tempo real dos requisitos da senha
+    function verificarRequisitos() {
+        let senha = document.getElementById('nova_senha').value;
+        let regex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&*-]).{6,}$/;
+        let msg = document.getElementById('requisito-msg');
+        
+        if (regex.test(senha)) {
+            msg.style.color = "#27ae60";
+            msg.innerText = "Senha forte e válida! ✔";
+        } else {
+            msg.style.color = "#e74c3c";
+            msg.innerText = "A senha deve ter números, letras (1 maiúscula, 1 minúscula) e 1 caractere especial (*, @, #, etc).";
+        }
+    }
+
+    // Validação final antes de enviar o formulário
+    function validarNovaSenha() {
+        let senha = document.getElementById('nova_senha').value;
+        let confirma = document.getElementById('confirma_senha').value;
+        let regex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&*-]).{6,}$/;
+
+        if (!regex.test(senha)) {
+            alert("Sua nova senha não atende aos requisitos de segurança.");
+            return false;
+        }
+
+        if (senha !== confirma) {
+            alert("As senhas informadas não são iguais. Confirme novamente.");
+            return false;
+        }
+        return true;
+    }
+</script>
+</body>
+</html>

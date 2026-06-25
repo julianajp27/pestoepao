@@ -1,0 +1,138 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="page-header">
+    <h1>📦 Controle de Produtos Prontos</h1>
+    <p>Cadastre e gerencie as foccacias e molhos artesanais prontos para venda.</p>
+</div>
+
+<div class="card">
+    <h2><i class="fa-solid fa-plus"></i> Cadastro / Edição de Produto</h2>
+    <form id="form-produto" action="/cadastrar_produto" method="POST" class="grid-form">
+        
+        <input type="hidden" id="produto_id" name="produto_id">
+
+        <div class="form-group full-width">
+            <label for="nome">Nome do Produto *</label>
+            <input type="text" id="nome" name="nome" placeholder="Ex: Foccacia de Alecrim e Sal Grosso" required>
+        </div>
+
+        <div class="form-group">
+            <label for="quantidade">Quantidade em Estoque *</label>
+            <input type="number" id="quantidade" name="quantidade" min="0" placeholder="0" required>
+        </div>
+
+        <div class="form-group">
+            <label for="preco">Preço de Venda (R$) *</label>
+            <input type="text" id="preco" name="preco" placeholder="0,00" required>
+        </div>
+
+        <div class="form-group">
+            <label for="data_producao">Data de Produção *</label>
+            <input type="date" id="data_producao" name="data_producao" required>
+        </div>
+
+        <div class="form-group">
+            <label for="data_validade">Data de Validade *</label>
+            <input type="date" id="data_validade" name="data_validade" required>
+        </div>
+
+        <div class="form-group">
+            <label for="desconto">Desconto (R$) <span class="opcional">(Opcional)</span></label>
+            <input type="text" id="desconto" name="desconto" placeholder="0,00">
+        </div>
+
+        <div class="form-group">
+            <label for="alerta_minimo">Estoque Mínimo (Alerta) *</label>
+            <input type="number" id="alerta_minimo" name="alerta_minimo" min="1" placeholder="5" required>
+        </div>
+
+        <div class="form-actions full-width">
+            <button type="submit" class="btn-primary" id="btn-salvar"><i class="fa-solid fa-floppy-disk"></i> Salvar Produto</button>
+            <button type="button" id="btn-cancelar" style="display: none; background-color: #95a5a6; color: white; border: none; border-radius: 4px; padding: 10px 20px; font-weight: bold; cursor: pointer; margin-left: 10px;" onclick="cancelarEdicao()">Cancelar Edição</button>
+        </div>
+    </form>
+</div>
+
+<div class="card">
+    <h2><i class="fa-solid fa-list"></i> Produtos Cadastrados</h2>
+    <div class="table-container">
+        <table class="custom-table">
+            <thead>
+                <tr>
+                    <th>Nome</th>
+                    <th>Qtd.</th>
+                    <th>Preço</th>
+                    <th>Desconto</th>
+                    <th>Produção</th>
+                    <th>Validade</th>
+                    <th>Status</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody id="tabela-produtos-corpo">
+                {% for produto in lista_produtos %}
+                <tr class="{% if produto.quantidade <= produto.alerta_minimo %}linha-alerta{% endif %}">
+                    <td>{{ produto.nome }}</td>
+                    <td>
+                        {{ produto.quantidade|int if produto.quantidade == produto.quantidade|int else produto.quantidade }}
+                        {% if produto.quantidade <= produto.alerta_minimo %}
+                            <i class="fa-solid fa-triangle-exclamation" title="Estoque Baixo" style="color: #f39c12;"></i>
+                        {% endif %}
+                    </td>
+                    <td>R$ {{ produto.preco }}</td>
+                    <td>{% if produto.desconto %}R$ {{ produto.desconto }}{% else %}R$ 0,00{% endif %}</td>
+                    <td>{{ produto.data_producao }}</td>
+                    <td>{{ produto.data_validade }}</td>
+                    <td>
+                        {% if produto.quantidade <= produto.alerta_minimo %}
+                            <span class="badge badge-warning">Baixo</span>
+                        {% else %}
+                            <span class="badge badge-success">OK</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <button type="button" class="btn-icon btn-edit" onclick="editarProduto('{{ produto._id }}', '{{ produto.nome }}', '{{ produto.quantidade }}', '{{ produto.preco }}', '{{ produto.data_producao }}', '{{ produto.data_validade }}', '{{ produto.desconto }}', '{{ produto.alerta_minimo }}')" title="Editar"><i class="fa-solid fa-pen"></i></button>
+                        
+                        <form action="/deletar_produto/{{ produto._id }}" method="POST" style="display: inline;" onsubmit="return confirm('Tem certeza que deseja excluir este produto do estoque?');">
+                            <button type="submit" class="btn-icon btn-delete" title="Excluir"><i class="fa-solid fa-trash"></i></button>
+                        </form>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="8" style="text-align: center; color: #7f8c8d;">Nenhum produto cadastrado no estoque ainda.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    // Função para puxar os dados da tabela para o formulário
+    function editarProduto(id, nome, quantidade, preco, data_producao, data_validade, desconto, alerta_minimo) {
+        document.getElementById('produto_id').value = id;
+        document.getElementById('nome').value = nome;
+        document.getElementById('quantidade').value = quantidade;
+        document.getElementById('preco').value = preco;
+        document.getElementById('data_producao').value = data_producao;
+        document.getElementById('data_validade').value = data_validade;
+        document.getElementById('desconto').value = desconto;
+        document.getElementById('alerta_minimo').value = alerta_minimo;
+        
+        document.getElementById('btn-salvar').innerHTML = '<i class="fa-solid fa-arrows-rotate"></i> Atualizar Produto';
+        document.getElementById('btn-cancelar').style.display = 'inline-block';
+        
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // Função para limpar o formulário e cancelar a edição
+    function cancelarEdicao() {
+        document.getElementById('produto_id').value = '';
+        document.getElementById('form-produto').reset();
+        document.getElementById('btn-salvar').innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Salvar Produto';
+        document.getElementById('btn-cancelar').style.display = 'none';
+    }
+</script>
+{% endblock %}

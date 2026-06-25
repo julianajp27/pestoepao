@@ -1,0 +1,142 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="page-header">
+    <h1>🌾 Controle de Insumos</h1>
+    <p>Gerencie as matérias-primas (farinha, azeite, embalagens) usadas na produção.</p>
+</div>
+
+<div class="card">
+    <h2><i class="fa-solid fa-plus"></i> Cadastro / Edição de Insumo</h2>
+    <form id="form-insumo" action="/cadastrar_insumo" method="POST" class="grid-form">
+        
+        <input type="hidden" id="insumo_id" name="insumo_id">
+
+        <div class="form-group full-width">
+            <label for="nome">Nome do Insumo / Embalagem *</label>
+            <input type="text" id="nome" name="nome" placeholder="Ex: Farinha de Trigo Italiana" required>
+        </div>
+
+        <div class="form-group">
+            <label for="quantidade">Quantidade Atual *</label>
+            <input type="number" step="0.01" id="quantidade" name="quantidade" min="0" placeholder="Ex: 5" required>
+        </div>
+
+        <div class="form-group">
+            <label for="unidade">Unidade de Medida *</label>
+            <select id="unidade" name="unidade" required>
+                <option value="">-- Selecione --</option>
+                <option value="Kg">Quilogramas (Kg)</option>
+                <option value="g">Gramas (g)</option>
+                <option value="L">Litros (L)</option>
+                <option value="ml">Mililitros (ml)</option>
+                <option value="Un">Unidades (Un)</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="custo">Custo Total (R$) *</label>
+            <input type="text" id="custo" name="custo" placeholder="0,00" onkeyup="formatarMoeda(this)" required>
+        </div>
+
+        <div class="form-group">
+            <label for="alerta_minimo">Estoque Mínimo (Alerta) *</label>
+            <input type="number" step="0.01" id="alerta_minimo" name="alerta_minimo" min="0" placeholder="Ex: 2" required>
+        </div>
+
+        <div class="form-actions full-width">
+            <button type="submit" class="btn-primary" id="btn-salvar"><i class="fa-solid fa-floppy-disk"></i> Salvar Insumo</button>
+            <button type="button" id="btn-cancelar" style="display: none; background-color: #95a5a6; color: white; border: none; border-radius: 4px; padding: 10px 20px; font-weight: bold; cursor: pointer; margin-left: 10px;" onclick="cancelarEdicao()">Cancelar Edição</button>
+        </div>
+    </form>
+</div>
+
+<div class="card">
+    <h2><i class="fa-solid fa-list"></i> Estoque de Insumos</h2>
+    <div class="table-container">
+        <table class="custom-table">
+            <thead>
+                <tr>
+                    <th>Nome do Insumo</th>
+                    <th>Estoque Atual</th>
+                    <th>Custo</th>
+                    <th>Status</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody id="tabela-insumos-corpo">
+                {% for insumo in lista_insumos %}
+                <tr class="{% if insumo.quantidade <= insumo.alerta_minimo %}linha-alerta{% endif %}">
+                    <td>{{ insumo.nome }}</td>
+                    <td>
+                        {{ insumo.quantidade|int if insumo.quantidade == insumo.quantidade|int else insumo.quantidade }} {{ insumo.unidade }}
+                        {% if insumo.quantidade <= insumo.alerta_minimo %}
+                            <i class="fa-solid fa-triangle-exclamation" title="Estoque Baixo" style="color: #f39c12;"></i>
+                        {% endif %}
+                    </td>
+                    <td>R$ {{ insumo.custo }}</td>
+                    <td>
+                        {% if insumo.quantidade <= insumo.alerta_minimo %}
+                            <span class="badge badge-warning">Repor</span>
+                        {% else %}
+                            <span class="badge badge-success">OK</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <button type="button" class="btn-icon btn-edit" title="Editar" onclick="editarInsumo('{{ insumo._id }}', '{{ insumo.nome }}', '{{ insumo.quantidade }}', '{{ insumo.unidade }}', '{{ insumo.custo }}', '{{ insumo.alerta_minimo }}')">
+                            <i class="fa-solid fa-pen"></i>
+                        </button>
+                        
+                        <form action="/deletar_insumo/{{ insumo._id }}" method="POST" style="display: inline;" onsubmit="return confirm('Tem certeza que deseja excluir este insumo permanentemente?');">
+                            <button type="submit" class="btn-icon btn-delete" title="Excluir"><i class="fa-solid fa-trash"></i></button>
+                        </form>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="5" style="text-align: center; color: #7f8c8d;">Nenhum insumo cadastrado ainda.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    // Função da máscara de moeda para formatar enquanto digita
+    function formatarMoeda(elemento) {
+        let valor = elemento.value.replace(/\D/g, '');
+        if (valor === '') {
+            elemento.value = '';
+            return;
+        }
+        valor = (valor / 100).toFixed(2) + '';
+        valor = valor.replace(".", ",");
+        valor = valor.replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1.');
+        elemento.value = valor;
+    }
+
+    // Função para carregar os dados no formulário para edição
+    function editarInsumo(id, nome, quantidade, unidade, custo, alerta_minimo) {
+        document.getElementById('insumo_id').value = id;
+        document.getElementById('nome').value = nome;
+        document.getElementById('quantidade').value = quantidade;
+        document.getElementById('unidade').value = unidade;
+        document.getElementById('custo').value = custo;
+        document.getElementById('alerta_minimo').value = alerta_minimo;
+        
+        document.getElementById('btn-salvar').innerHTML = '<i class="fa-solid fa-arrows-rotate"></i> Atualizar Insumo';
+        document.getElementById('btn-cancelar').style.display = 'inline-block';
+        
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // Função para cancelar a edição e resetar o formulário
+    function cancelarEdicao() {
+        document.getElementById('insumo_id').value = '';
+        document.getElementById('form-insumo').reset();
+        document.getElementById('btn-salvar').innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Salvar Insumo';
+        document.getElementById('btn-cancelar').style.display = 'none';
+    }
+</script>
+{% endblock %}

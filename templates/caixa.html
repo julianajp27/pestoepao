@@ -1,0 +1,180 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="page-header">
+    <h1>💰 Fluxo de Caixa Geral</h1>
+    <p>Acompanhe as entradas e saídas financeiras do seu negócio em tempo real.</p>
+</div>
+
+<div class="dashboard-cards" style="display: flex; gap: 20px; margin-bottom: 20px;">
+    <div class="card" style="flex: 1; text-align: center; border-left: 5px solid #27ae60;">
+        <h3 style="color: #7f8c8d; font-size: 16px; margin-bottom: 10px;">Total de Entradas</h3>
+        <p id="card-entradas" style="font-size: 26px; color: #27ae60; font-weight: bold;">R$ {{ total_entradas|formata_moeda }}</p>
+    </div>
+    
+    <div class="card" style="flex: 1; text-align: center; border-left: 5px solid #e74c3c;">
+        <h3 style="color: #7f8c8d; font-size: 16px; margin-bottom: 10px;">Total de Saídas</h3>
+        <p id="card-saidas" style="font-size: 26px; color: #e74c3c; font-weight: bold;">R$ {{ total_saidas|formata_moeda }}</p>
+    </div>
+    
+    <div class="card" style="flex: 1; text-align: center; border-left: 5px solid #2980b9;">
+        <h3 style="color: #7f8c8d; font-size: 16px; margin-bottom: 10px;">Saldo Atual</h3>
+        <p id="card-saldo" style="font-size: 26px; font-weight: bold; color: {% if saldo_atual >= 0 %}#2980b9{% else %}#e74c3c{% endif %};">
+            R$ {{ saldo_atual|formata_moeda }}
+        </p>
+    </div>
+</div>
+
+<div class="card" style="margin-bottom: 20px; background-color: #f8f9fa; border: 1px solid #e9ecef;">
+    <div style="display: flex; gap: 20px; align-items: flex-end;">
+        
+        <div style="flex: 1;">
+            <label for="mes-filtro" style="font-weight: bold; display: block; margin-bottom: 5px; color: #2c3e50;">Filtrar por Mês:</label>
+            <input type="month" id="mes-filtro" style="width: 100%; padding: 10px; border-radius: 4px; border: 1px solid #ccc; outline: none; box-sizing: border-box;" onchange="filtrarTabela()">
+        </div>
+        
+        <div style="flex: 2; display: flex; gap: 10px; align-items: flex-end;">
+            <div style="flex: 1;">
+                <label for="busca-caixa" style="font-weight: bold; display: block; margin-bottom: 5px; color: #2c3e50;">Pesquisar Lançamento:</label>
+                <input type="text" id="busca-caixa" placeholder="🔍 Digite uma categoria ou descrição..." style="width: 100%; padding: 10px; border-radius: 4px; border: 1px solid #ccc; outline: none; box-sizing: border-box;" onkeyup="if(event.key === 'Enter') filtrarTabela()">
+            </div>
+            <button type="button" class="btn-primary" style="padding: 10px 20px; height: 39px; border-radius: 4px; cursor: pointer; border: none; font-weight: bold; margin-bottom: 0; box-sizing: border-box;" onclick="filtrarTabela()">OK</button>
+        </div>
+
+    </div>
+</div>
+
+<div class="card">
+    <h2><i class="fa-solid fa-plus"></i> Novo Lançamento Manual</h2>
+    <form action="/cadastrar_lancamento_caixa" method="POST" class="grid-form">
+        <div class="form-group">
+            <label for="tipo">Tipo de Movimentação *</label>
+            <select id="tipo" name="tipo" required>
+                <option value="entrada">Entrada (Receita)</option>
+                <option value="saida">Saída (Despesa)</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="valor">Valor (R$) *</label>
+            <input type="text" id="valor" name="valor" placeholder="0,00" onkeyup="formatarMoeda(this)" required>
+        </div>
+
+        <div class="form-group">
+            <label for="categoria">Categoria *</label>
+            <input type="text" id="categoria" name="categoria" placeholder="Ex: Conta de Luz, Venda Avulsa..." required>
+        </div>
+
+        <div class="form-group full-width">
+            <label for="descricao">Descrição / Observation</label>
+            <input type="text" id="descricao" name="descricao" placeholder="Detalhes adicionais do lançamento...">
+        </div>
+
+        <div class="form-actions full-width">
+            <button type="submit" class="btn-primary" style="background-color: #27ae60; border-color: #27ae60;"><i class="fa-solid fa-floppy-disk"></i> Registrar no Caixa</button>
+        </div>
+    </form>
+</div>
+
+<div class="card" style="margin-top: 20px;">
+    <h2><i class="fa-solid fa-list-ul"></i> Histórico de Movimentações</h2>
+    <div class="table-container" style="margin-top: 15px;">
+        <table class="custom-table">
+            <thead>
+                <tr>
+                    <th>Data e Hora</th>
+                    <th>Tipo</th>
+                    <th>Categoria</th>
+                    <th>Descrição</th>
+                    <th>Valor</th>
+                </tr>
+            </thead>
+            <tbody id="tabela-caixa-corpo">
+                {% for lancamento in lista_lancamentos %}
+                <tr>
+                    <td>{{ lancamento.data_lancamento.strftime('%d/%m/%Y %H:%M') }}</td>
+                    <td>
+                        {% if lancamento.tipo == 'entrada' %}
+                            <span style="background-color: #27ae60; color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px; display: inline-block; white-space: nowrap; font-weight: bold;">
+                                <i class="fa-solid fa-arrow-up"></i> Entrada
+                            </span>
+                        {% else %}
+                            <span style="background-color: #e74c3c; color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px; display: inline-block; white-space: nowrap; font-weight: bold;">
+                                <i class="fa-solid fa-arrow-down"></i> Saída
+                            </span>
+                        {% endif %}
+                    </td>
+                    <td>{{ lancamento.categoria }}</td>
+                    <td>{{ lancamento.descricao if lancamento.descricao else '-' }}</td>
+                    <td style="font-weight: bold; white-space: nowrap; color: {% if lancamento.tipo == 'entrada' %}#27ae60{% else %}#e74c3c{% endif %};">
+                        R$ {{ lancamento.valor|formata_moeda }}
+                    </td>
+                </tr>
+                {% else %}
+                <tr id="linha-vazia">
+                    <td colspan="5" style="text-align: center; color: #7f8c8d;">Nenhuma movimentação registrada no caixa ainda.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    // Máscara para formatar moeda no formulário
+    function formatarMoeda(elemento) {
+        let valor = elemento.value.replace(/\D/g, '');
+        if (valor === '') {
+            elemento.value = '';
+            return;
+        }
+        valor = (valor / 100).toFixed(2) + '';
+        valor = valor.replace(".", ",");
+        valor = valor.replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1.');
+        elemento.value = valor;
+    }
+
+    // Função de Filtro Inteligente (Pesquisa via botão/enter + Mês)
+    function filtrarTabela() {
+        let inputBusca = document.getElementById("busca-caixa").value.toLowerCase();
+        let inputMes = document.getElementById("mes-filtro").value; // Formato YYYY-MM
+        let linhas = document.querySelectorAll("#tabela-caixa-corpo tr:not(#linha-vazia)");
+
+        let somaEntradas = 0;
+        let somaSaidas = 0;
+
+        linhas.forEach(linha => {
+            let dataTexto = dynamicText = linha.cells[0].innerText;
+            let tipoTexto = linha.cells[1].innerText.toLowerCase();
+            let categoria = linha.cells[2].innerText.toLowerCase();
+            let descricao = linha.cells[3].innerText.toLowerCase();
+            let valorTexto = linha.cells[4].innerText.replace('R$', '').replace(/\./g, '').replace(',', '.').trim();
+            let valor = parseFloat(valorTexto);
+
+            let partesData = dataTexto.split(' ')[0].split('/');
+            let mesDaLinha = partesData[2] + "-" + partesData[1];
+
+            let textoLinha = categoria + " " + descricao;
+            let matchBusca = textoLinha.includes(inputBusca);
+            let matchMes = (inputMes === "") || (mesDaLinha === inputMes);
+
+            if (matchBusca && matchMes) {
+                linha.style.display = "";
+                if (tipoTexto.includes("entrada")) somaEntradas += valor;
+                if (tipoTexto.includes("saída") || tipoTexto.includes("saida")) somaSaidas += valor;
+            } else {
+                linha.style.display = "none";
+            }
+        });
+
+        let saldo = somaEntradas - somaSaidas;
+        
+        document.getElementById("card-entradas").innerText = "R$ " + somaEntradas.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+        document.getElementById("card-saidas").innerText = "R$ " + somaSaidas.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+        
+        let cardSaldo = document.getElementById("card-saldo");
+        cardSaldo.innerText = "R$ " + saldo.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+        cardSaldo.style.color = saldo >= 0 ? "#2980b9" : "#e74c3c";
+    }
+</script>
+{% endblock %}

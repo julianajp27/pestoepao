@@ -1,0 +1,109 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="page-header">
+    <h1>👥 Controle de Clientes</h1>
+    <p>Cadastre e consulte as informações dos seus clientes para vendas e entregas.</p>
+</div>
+
+<div class="card">
+    <h2><i class="fa-solid fa-user-plus"></i> Cadastro / Edição de Cliente</h2>
+    <form id="form-cliente" action="/cadastrar_cliente" method="POST" style="display: flex; flex-direction: column; gap: 15px; margin-top: 15px;">
+        
+        <input type="hidden" id="cliente_id" name="cliente_id">
+        
+        <div class="form-group">
+            <label for="cliente-nome">Nome Completo *</label>
+            <input type="text" id="cliente-nome" name="nome" placeholder="Ex: Maria Silva" required>
+        </div>
+
+        <div class="form-group">
+            <label for="cliente-telefone">Telefone / WhatsApp *</label>
+            <input type="tel" id="cliente-telefone" name="telefone" placeholder="(81) 99999-9999" required>
+        </div>
+
+        <div class="form-group">
+            <label for="cliente-email">E-mail <span class="opcional">(Opcional)</span></label>
+            <input type="email" id="cliente-email" name="email" placeholder="maria@email.com">
+        </div>
+
+        <div class="form-group">
+            <label for="cliente-endereco">Endereço de Entrega <span class="opcional">(Opcional)</span></label>
+            <input type="text" id="cliente-endereco" name="endereco" placeholder="Rua, Número, Bairro, Cidade">
+        </div>
+
+        <div class="form-actions" style="margin-top: 10px; display: flex; gap: 10px;">
+            <button type="submit" class="btn-primary" id="btn-salvar" style="flex: 1; justify-content: center;">
+                <i class="fa-solid fa-floppy-disk"></i> Salvar Cliente
+            </button>
+            <button type="button" id="btn-cancelar" style="display: none; background-color: #95a5a6; color: white; border: none; border-radius: 4px; padding: 10px 20px; font-weight: bold; cursor: pointer; margin-left: 10px;" onclick="cancelarEdicao()">Cancelar Edição</button>    
+                Cancelar Edição
+            </button>
+        </div>
+    </form>
+</div>
+
+<div class="card" style="margin-top: 20px;">
+    <h2><i class="fa-solid fa-users"></i> Clientes Cadastrados</h2>
+    <div class="table-container" style="margin-top: 15px;">
+        <table class="custom-table">
+            <thead>
+                <tr>
+                    <th>Nome</th>
+                    <th>Telefone</th>
+                    <th>E-mail</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody id="tabela-clientes-corpo">
+                {% for cliente in lista_clientes %}
+                <tr>
+                    <td>{{ cliente.nome }}</td>
+                    <td>{{ cliente.telefone }}</td>
+                    <td>{{ cliente.email if cliente.email else '-' }}</td>
+                    <td>
+                        <button type="button" class="btn-icon btn-edit" title="Editar" onclick="editarCliente('{{ cliente._id }}', '{{ cliente.nome }}', '{{ cliente.telefone }}', '{{ cliente.email if cliente.email else '' }}', '{{ cliente.endereco if cliente.endereco else '' }}')">
+                            <i class="fa-solid fa-pen"></i>
+                        </button>
+                        
+                        <form action="/deletar_cliente/{{ cliente._id }}" method="POST" style="display: inline;" onsubmit="return confirm('Tem certeza que deseja excluir este cliente do cadastro?');">
+                            <button type="submit" class="btn-icon btn-delete" title="Excluir"><i class="fa-solid fa-trash"></i></button>
+                        </form>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="4" style="text-align: center; color: #7f8c8d;">
+                        Nenhum cliente cadastrado ainda. Comece usando o formulário acima!
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    // Função para carregar os dados do cliente no formulário para edição
+    function editarCliente(id, nome, telefone, email, address) {
+        document.getElementById('cliente_id').value = id;
+        document.getElementById('cliente-nome').value = nome;
+        document.getElementById('cliente-telefone').value = telefone;
+        document.getElementById('cliente-email').value = email;
+        document.getElementById('cliente-endereco').value = address;
+        
+        document.getElementById('btn-salvar').innerHTML = '<i class="fa-solid fa-arrows-rotate"></i> Atualizar Cliente';
+        document.getElementById('btn-cancelar').style.display = 'inline-block';
+        
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // Função para cancelar a edição e limpar o formulário
+    function cancelarEdicao() {
+        document.getElementById('cliente_id').value = '';
+        document.getElementById('form-cliente').reset();
+        document.getElementById('btn-salvar').innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Salvar Cliente';
+        document.getElementById('btn-cancelar').style.display = 'none';
+    }
+</script>
+{% endblock %}

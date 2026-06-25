@@ -1,0 +1,133 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="page-header">
+    <h1>🛒 Realizar Venda</h1>
+    <p>Registre novas vendas, selecione clientes e produtos, e dê baixa automática no estoque.</p>
+</div>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    {% for category, message in messages %}
+      <div style="padding: 15px; margin-bottom: 20px; border-radius: 6px; color: white; background-color: {% if category == 'success' %}#27ae60{% else %}#e74c3c{% endif %}; font-weight: bold; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+        <i class="fa-solid {% if category == 'success' %}fa-circle-check{% else %}fa-triangle-exclamation{% endif %}"></i> {{ message }}
+      </div>
+    {% endfor %}
+  {% endif %}
+{% endwith %}
+
+<div class="card">
+    <h2><i class="fa-solid fa-cart-plus"></i> Nova Venda</h2>
+    <form action="/registrar_venda" method="POST" class="grid-form" style="margin-top: 15px;">
+        
+        <div class="form-group">
+            <label for="cliente_id">Selecione o Cliente *</label>
+            <select id="cliente_id" name="cliente_id" required>
+                <option value="">-- Escolha o Cliente --</option>
+                {% for cliente in lista_clientes %}
+                    <option value="{{ cliente._id }}">{{ cliente.nome }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="produto_id">Selecione o Produto *</label>
+            <select id="produto_id" name="produto_id" onchange="calcularTotalVenda()" required>
+                <option value="">-- Escolha o Produto --</option>
+                {% for produto in lista_produtos %}
+                    <option value="{{ produto._id }}" data-preco="{{ produto.preco }}" data-desconto="{{ produto.desconto if produto.desconto else '0,00' }}" data-estoque="{{ produto.quantidade }}">
+                        {{ produto.nome }} (Disponível: {{ produto.quantidade|int }})
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="quantidade">Quantidade Desejada *</label>
+            <input type="number" id="quantidade" name="quantidade" min="1" value="1" oninput="calcularTotalVenda()" required>
+        </div>
+
+        <div class="form-group">
+            <label for="forma_pagamento">Forma de Pagamento *</label>
+            <select id="forma_pagamento" name="forma_pagamento" required>
+                <option value="">-- Selecione --</option>
+                <option value="PIX">PIX</option>
+                <option value="Cartão de Crédito">Cartão de Crédito</option>
+                <option value="Cartão de Débito">Cartão de Débito</option>
+                <option value="Dinheiro">Dinheiro</option>
+            </select>
+        </div>
+
+        <div class="form-group full-width">
+            <label style="font-weight: bold; display: block; margin-bottom: 5px;">Valor Total da Venda</label>
+            <div id="valor-total-venda" style="font-size: 24px; font-weight: bold; color: #27ae60; padding-top: 5px;">R$ 0,00</div>
+        </div>
+
+        <div class="form-actions full-width" style="margin-top: 15px;">
+            <button type="submit" class="btn-primary" style="background-color: #27ae60; border-color: #27ae60; width: 100%; justify-content: center; font-size: 16px;">
+                <i class="fa-solid fa-circle-check"></i> Concluir e Lançar Venda
+            </button>
+        </div>
+    </form>
+</div>
+
+<div class="card" style="margin-top: 20px;">
+    <h2><i class="fa-solid fa-clock-rotate-left"></i> Histórico do Dia (Hoje)</h2>
+    <div class="table-container" style="margin-top: 15px;">
+        <table class="custom-table">
+            <thead>
+                <tr>
+                    <th>Hora</th>
+                    <th>Descrição da Venda</th>
+                    <th>Valor Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for venda in vendas_hoje %}
+                <tr>
+                    <td>{{ venda.data_lancamento.strftime('%H:%M') }}</td>
+                    <td>{{ venda.descricao }}</td>
+                    <td style="font-weight: bold; color: #27ae60;">R$ {{ "%.2f"|format(venda.valor)|replace('.', ',') }}</td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="3" style="text-align: center; color: #7f8c8d;">Nenhuma venda registrada no dia de hoje ainda.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    function calcularTotalVenda() {
+        let select = document.getElementById('produto_id');
+        let option = select.options[select.selectedIndex];
+        let quantidadeInput = document.getElementById('quantidade');
+        let quantidade = parseFloat(quantidadeInput.value) || 0;
+
+        if (!option || option.value === "") {
+            document.getElementById('valor-total-venda').innerText = "R$ 0,00";
+            return;
+        }
+
+        let precoStr = option.getAttribute('data-preco') || "0,00";
+        let descontoStr = option.getAttribute('data-desconto') || "0,00";
+        let estoqueMax = parseFloat(option.getAttribute('data-estoque')) || 0;
+
+        if (quantidade > estoqueMax) {
+            alert("Atenção: A quantidade informada é maior do que a disponível em estoque (" + estoqueMax + ").");
+            quantidadeInput.value = estoqueMax;
+            quantidade = estoqueMax;
+        }
+
+        let preco = parseFloat(precoStr.replace('.', '').replace(',', '.')) || 0;
+        let desconto = parseFloat(descontoStr.replace('.', '').replace(',', '.')) || 0;
+
+        let precoFinal = preco - desconto;
+        let total = precoFinal * quantidade;
+
+        document.getElementById('valor-total-venda').innerText = "R$ " + total.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+    }
+</script>
+{% endblock %}

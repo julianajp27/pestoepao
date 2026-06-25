@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pesto e Pão - Gestão Financeira</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        /* O botão redondo que fica flutuando */
+        #chatbot-btn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background-color: #27ae60;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            font-size: 24px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            cursor: pointer;
+            z-index: 1000;
+            transition: transform 0.3s;
+        }
+        #chatbot-btn:hover { transform: scale(1.1); }
+
+        /* A janela do chat (escondida por padrão) */
+        #chatbot-window {
+            display: none;
+            position: fixed;
+            bottom: 90px;
+            right: 20px;
+            width: 320px;
+            height: 400px;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            z-index: 1000;
+            flex-direction: column;
+            overflow: hidden;
+            border: 1px solid #e0e0e0;
+        }
+        .chat-header {
+            background-color: #27ae60;
+            color: white;
+            padding: 15px;
+            font-weight: bold;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .chat-header i.close-btn { cursor: pointer; font-size: 18px; }
+        .chat-body {
+            flex: 1;
+            padding: 15px;
+            overflow-y: auto;
+            background-color: #f9f9f9;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .chat-msg { max-width: 80%; padding: 10px; border-radius: 8px; font-size: 14px; }
+        .msg-bot { background-color: #e8f5e9; color: #2c3e50; align-self: flex-start; border-bottom-left-radius: 0; }
+        .msg-user { background-color: #2980b9; color: white; align-self: flex-end; border-bottom-right-radius: 0; }
+        .chat-footer {
+            padding: 10px;
+            background-color: white;
+            border-top: 1px solid #eee;
+            display: flex;
+            gap: 10px;
+        }
+        .chat-footer input {
+            flex: 1;
+            padding: 8px 12px;
+            border: 1px solid #ccc;
+            border-radius: 20px;
+            outline: none;
+        }
+        .chat-footer button {
+            background-color: #27ae60;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 35px;
+            height: 35px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar">
+        <div class="logo">
+            <h2 style="color: #195637;">🌿 Pesto e Pão</h2>
+        </div>
+        <nav>
+            <ul>
+                <li><a href="/"><i class="fa-solid fa-chart-line"></i> Dashboard</a></li>
+                <li><a href="/vendas"><i class="fa-solid fa-cart-shopping"></i> Realizar Venda</a></li>
+                <li><a href="/produtos"><i class="fa-solid fa-boxes-stacked"></i> Produtos Prontos</a></li>
+                <li><a href="/insumos"><i class="fa-solid fa-wheat-awn"></i> Insumos</a></li>
+                <li><a href="/caixa"><i class="fa-solid fa-cash-register"></i> Caixa Geral</a></li>
+                <li><a href="/clientes"><i class="fa-solid fa-users"></i> Clientes</a></li>
+                
+                <li style="margin-top: 30px;">
+                    <a href="/logout" style="color: #e74c3c; font-weight: bold;">
+                        <i class="fa-solid fa-right-from-bracket"></i> Sair
+                    </a>
+                </li>
+            </ul>
+        </nav>
+    </div>
+
+    <div class="main-content">
+        <header>
+            <div class="user-profile">
+                <span>Painel Administrador</span>
+            </div>
+        </header>
+        
+        <main>
+            {% block content %}
+            {% endblock %}
+        </main>
+    </div>
+
+    <button id="chatbot-btn" onclick="toggleChat()">
+        <i class="fa-solid fa-robot"></i>
+    </button>
+
+    <div id="chatbot-window">
+        <div class="chat-header">
+            <span><i class="fa-solid fa-robot"></i> Assistente Virtual</span>
+            <i class="fa-solid fa-xmark close-btn" onclick="toggleChat()"></i>
+        </div>
+        <div class="chat-body" id="chat-body">
+            <div class="chat-msg msg-bot">Olá! Eu sou a assistente da Pesto e Pão. Como posso te ajudar com a gestão hoje?</div>
+        </div>
+        <div class="chat-footer">
+            <input type="text" id="chat-input" placeholder="Digite sua dúvida..." onkeypress="if(event.key === 'Enter') enviarMensagem()">
+            <button onclick="enviarMensagem()"><i class="fa-solid fa-paper-plane"></i></button>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <script>
+        // Abre e fecha a janela do chat
+        function toggleChat() {
+            const chatWindow = document.getElementById('chatbot-window');
+            if (chatWindow.style.display === 'flex') {
+                chatWindow.style.display = 'none';
+            } else {
+                chatWindow.style.display = 'flex';
+                document.getElementById('chat-input').focus();
+            }
+        }
+
+// Comunicação real com o cérebro do Python
+        function enviarMensagem() {
+            const input = document.getElementById('chat-input');
+            const mensagem = input.value.trim();
+            if (mensagem === '') return;
+
+            const chatBody = document.getElementById('chat-body');
+
+            // 1. Adiciona a mensagem do usuário na tela
+            chatBody.innerHTML += `<div class="chat-msg msg-user">${mensagem}</div>`;
+            input.value = '';
+            chatBody.scrollTop = chatBody.scrollHeight; // Rola pro final
+
+            // 2. Mostra a bolinha de "Digitando..." para dar efeito de inteligência
+            const idDigitando = "typing-" + Date.now();
+            chatBody.innerHTML += `<div id="${idDigitando}" class="chat-msg msg-bot"><i>Digitando...</i></div>`;
+            chatBody.scrollTop = chatBody.scrollHeight;
+
+            // 3. Envia a pergunta para o Python no backend
+            fetch('/api/chatbot', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ mensagem: mensagem })
+            })
+            .then(response => response.json())
+            .then(data => {
+                // 4. Remove o "Digitando..." e coloca a resposta real do banco de dados
+                document.getElementById(idDigitando).remove();
+                chatBody.innerHTML += `<div class="chat-msg msg-bot">${data.resposta}</div>`;
+                chatBody.scrollTop = chatBody.scrollHeight;
+            })
+            .catch(error => {
+                document.getElementById(idDigitando).remove();
+                chatBody.innerHTML += `<div class="chat-msg msg-bot" style="color: #e74c3c;">Oops! Tive um problema ao consultar o sistema.</div>`;
+            });
+        }
+    </script>
+    
+    {% block scripts %}
+    {% endblock %}
+</body>
+</html>

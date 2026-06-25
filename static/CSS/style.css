@@ -1,0 +1,248 @@
+/* ==========================================================================
+   CONFIGURAÇÕES GLOBAIS
+   ========================================================================== */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+body {
+    display: flex;
+    background-color: #f8f9fa;
+    color: #333;
+}
+
+/* ==========================================================================
+   MENU LATERAL (SIDEBAR) - PALETA PESTO E PÃO
+   ========================================================================== */
+.sidebar {
+    width: 260px;
+    height: 100vh;
+    background-color: #d3e68a; /* Fundo verde claro */
+    color: #195637;            /* Texto verde escuro */
+    position: fixed;
+    padding: 20px;
+    border-right: 1px solid rgba(25, 86, 55, 0.1);
+}
+
+.sidebar .logo {
+    text-align: center;
+    padding-bottom: 20px;
+    border-bottom: 1px solid rgba(25, 86, 55, 0.2);
+    margin-bottom: 20px;
+}
+
+.sidebar nav ul {
+    list-style: none;
+}
+
+.sidebar nav ul li {
+    margin-bottom: 15px;
+}
+
+.sidebar nav ul li a {
+    color: #195637;            /* Links em verde escuro */
+    text-decoration: none;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px;
+    border-radius: 5px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+/* Efeito de Hover Suave e Elegante (Sem letra branca) */
+.sidebar nav ul li a:hover {
+    background-color: rgba(25, 86, 55, 0.12); /* Fundo verde translúcido bem sutil */
+    color: #195637;                            /* Mantém a leitura perfeita no verde escuro */
+    font-weight: 600;                          /* Destaca levemente o texto */
+    padding-left: 15px;                        /* Movimento suave para a direita */
+}
+
+/* ==========================================================================
+   ÁREA DE CONTEÚDO PRINCIPAL
+   ========================================================================== */
+.main-content {
+    margin-left: 260px;
+    width: calc(100% - 260px);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+header {
+    background-color: #fff;
+    padding: 15px 30px;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.user-profile {
+    font-weight: 600;
+    color: #7f8c8d;
+}
+
+main {
+    padding: 30px;
+    flex-grow: 1;
+}
+
+/* ==========================================================================
+   COMPONENTES REUTILIZÁVEIS (PADRÃO CLEAN)
+   ========================================================================== */
+.card {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    margin-bottom: 20px;
+}
+
+h1, h2 {
+    color: #195637; /* Títulos alinhados com a identidade da marca */
+    margin-bottom: 20px;
+}
+
+/* ==========================================================================
+   ESTILOS DOS FORMULÁRIOS (GRID CLEAN)
+   ========================================================================== */
+.page-header {
+    margin-bottom: 25px;
+}
+
+.page-header p {
+    color: #7f8c8d;
+    font-size: 14px;
+}
+
+.grid-form {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+    margin-top: 15px;
+}
+
+.full-width {
+    grid-column: 1 / -1;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.form-group label {
+    font-size: 14px;
+    font-weight: 600;
+    color: #195637;
+}
+
+.form-group .opcional {
+    font-weight: normal;
+    color: #95a5a6;
+    font-size: 12px;
+}
+
+.form-group input, .form-group select {
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.3s;
+}
+
+.form-group input:focus {
+    border-color: #195637;
+    box-shadow: 0 0 0 3px rgba(25, 86, 55, 0.1);
+}
+
+/* Botões */
+.btn-primary {
+    background-color: #195637;
+    color: white;
+    border: none;
+    padding: 12px 20px;
+    font-size: 15px;
+    font-weight: 600;
+    border-radius: 6px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: background 0.3s;
+}
+
+.btn-primary:hover {
+    background-color: #113c26;
+}
+
+/* ==========================================================================
+   TABELAS PERSONALIZADAS
+   ========================================================================== */
+.table-container {
+    width: 100%;
+    overflow-x: auto;
+    margin-top: 15px;
+}
+
+.custom-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+    font-size: 14px;
+}
+
+.custom-table th {
+    background-color: rgba(25, 86, 55, 0.05);
+    color: #195637;
+    padding: 12px 15px;
+    font-weight: 600;
+    border-bottom: 2px solid rgba(25, 86, 55, 0.1);
+}
+
+.custom-table td {
+    padding: 12px 15px;
+    border-bottom: 1px solid #e0e0e0;
+    vertical-align: middle;
+}
+
+/* Linha com destaque quando o estoque está baixo */
+.linha-alerta {
+    background-color: #fff9e6;
+}
+.linha-alerta td i {
+    color: #f39c12;
+}
+
+/* Badges de Status */
+.badge {
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 600;
+}
+.badge-success { background-color: #e8f5e9; color: #2e7d32; }
+.badge-warning { background-color: #fff3e0; color: #ef6c00; }
+
+/* Botões de Ação na Tabela */
+.btn-icon {
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    font-size: 16px;
+    padding: 4px 8px;
+    border-radius: 4px;
+    transition: background 0.3s;
+}
+.btn-edit { color: #2980b9; }
+.btn-edit:hover { background-color: #e3f2fd; }
+.btn-delete { color: #c0392b; }
+.btn-delete:hover { background-color: #fce4d6; }
