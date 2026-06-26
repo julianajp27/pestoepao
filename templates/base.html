@@ -92,26 +92,30 @@
 </head>
 <body>
 
+ <div class="sidebar">
+
     <div class="sidebar-logo">
-        <img src="{{ url_for('static', filename='logo_pp.png') }}" alt="Logo" style="width: 100px; height: auto;">
+        <img src="{{ url_for('static', filename='logo_pp.png') }}" alt="Logo">
     </div>
-        <nav>
-            <ul>
-                <li><a href="/"><i class="fa-solid fa-chart-line"></i> Dashboard</a></li>
-                <li><a href="/vendas"><i class="fa-solid fa-cart-shopping"></i> Realizar Venda</a></li>
-                <li><a href="/produtos"><i class="fa-solid fa-boxes-stacked"></i> Produtos Prontos</a></li>
-                <li><a href="/insumos"><i class="fa-solid fa-wheat-awn"></i> Insumos</a></li>
-                <li><a href="/caixa"><i class="fa-solid fa-cash-register"></i> Caixa Geral</a></li>
-                <li><a href="/clientes"><i class="fa-solid fa-users"></i> Clientes</a></li>
-                
-                <li style="margin-top: 30px;">
-                    <a href="/logout" style="color: #e74c3c; font-weight: bold;">
-                        <i class="fa-solid fa-right-from-bracket"></i> Sair
-                    </a>
-                </li>
-            </ul>
-        </nav>
-    </div>
+
+    <nav>
+        <ul>
+            <li><a href="/"><i class="fa-solid fa-chart-line"></i> Dashboard</a></li>
+            <li><a href="/vendas"><i class="fa-solid fa-cart-shopping"></i> Realizar Venda</a></li>
+            <li><a href="/produtos"><i class="fa-solid fa-boxes-stacked"></i> Produtos Prontos</a></li>
+            <li><a href="/insumos"><i class="fa-solid fa-wheat-awn"></i> Insumos</a></li>
+            <li><a href="/caixa"><i class="fa-solid fa-cash-register"></i> Caixa Geral</a></li>
+            <li><a href="/clientes"><i class="fa-solid fa-users"></i> Clientes</a></li>
+
+            <li style="margin-top:30px;">
+                <a href="/logout" style="color:#e74c3c;font-weight:bold;">
+                    <i class="fa-solid fa-right-from-bracket"></i> Sair
+                </a>
+            </li>
+        </ul>
+    </nav>
+
+</div>
 
     <div class="main-content">
         <header>

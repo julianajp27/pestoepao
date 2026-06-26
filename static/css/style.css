@@ -18,20 +18,28 @@ body {
    MENU LATERAL (SIDEBAR) - PALETA PESTO E PÃO
    ========================================================================== */
 .sidebar {
-    width: 260px;
-    height: 100vh;
-    background-color: #d3e68a; /* Fundo verde claro */
-    color: #195637;            /* Texto verde escuro */
+     width: 260px;
+    min-height: 100vh;
+    background-color: #d3e68a;
+    color: #195637;
     position: fixed;
+    top: 0;
+    left: 0;
     padding: 20px;
-    border-right: 1px solid rgba(25, 86, 55, 0.1);
+    border-right: 1px solid rgba(25,86,55,.1);
+    overflow-y: auto;
 }
 
-.sidebar .logo {
+.sidebar-logo {
     text-align: center;
     padding-bottom: 20px;
     border-bottom: 1px solid rgba(25, 86, 55, 0.2);
     margin-bottom: 20px;
+}
+
+.sidebar-logo img{
+    width:140px;
+    height:auto;
 }
 
 .sidebar nav ul {
