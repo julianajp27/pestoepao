@@ -312,7 +312,12 @@ def registrar_venda():
     
     try:
         produto = produtos_col.find_one({'_id': ObjectId(produto_id)})
-        cliente = clientes_col.find_one({'_id': ObjectId(cliente_id)})
+        
+        # --- AJUSTE AQUI: Só busca o cliente se um ID válido for recebido ---
+        cliente = None
+        if cliente_id: 
+            cliente = clientes_col.find_one({'_id': ObjectId(cliente_id)})
+        # -------------------------------------------------------------------
         
         if produto:
             # Tratamento de preço e desconto
@@ -324,7 +329,8 @@ def registrar_venda():
                 {'$set': {'quantidade': max(0.0, float(produto.get('quantidade', 0)) - qtd)}}
             )
             
-            nome_cliente = cliente.get('nome') if cliente else "Sem Cadastro"
+            # Se não encontrou cliente (ou não foi enviado), vira Consumidor Final
+            nome_cliente = cliente.get('nome') if cliente else "Consumidor Final"
             
             # Garante que a data salva no banco use o horário correto do Brasil
             agora_brasil = datetime.now(FUSO_BR).replace(tzinfo=None)

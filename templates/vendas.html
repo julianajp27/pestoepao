@@ -21,13 +21,13 @@
     <form action="/registrar_venda" method="POST" class="grid-form" style="margin-top: 15px;">
         
         <div class="form-group">
-            <label for="cliente_id">Selecione o Cliente *</label>
-            <select id="cliente_id" name="cliente_id" required>
-                <option value="">-- Escolha o Cliente --</option>
-                {% for cliente in lista_clientes %}
+            <label>Selecione o Cliente <span class="opcional">(Opcional)</span></label>
+                <select name="cliente_id" id="cliente_id">
+                    <option value="">-- Consumidor Final (Sem Cadastro) --</option>
+                    {% for cliente in lista_clientes %}
                     <option value="{{ cliente._id }}">{{ cliente.nome }}</option>
-                {% endfor %}
-            </select>
+                    {% endfor %}
+                </select>
         </div>
 
         <div class="form-group">
