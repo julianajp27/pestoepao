@@ -7,8 +7,15 @@ from functools import wraps
 import random
 import json
 import os
+from dotenv import load_dotenv
 
-app = Flask(__name__)
+load_dotenv()
+
+app = Flask(
+    __name__,
+    static_folder="static",
+    template_folder="templates"
+)
 app.secret_key = 'pesto_e_pao_chave_secreta_super_segura'
 
 # ==========================================
