@@ -28,6 +28,7 @@ body {
     padding: 20px;
     border-right: 1px solid rgba(25,86,55,.1);
     overflow-y: auto;
+    z-index: 1000; /* Garante que fique acima de outros elementos */
 }
 
 .sidebar-logo {
@@ -80,6 +81,7 @@ body {
     min-height: 100vh;
     display: flex;
     flex-direction: column;
+    transition: all 0.3s ease;
 }
 
 header {
@@ -97,7 +99,7 @@ header {
 }
 
 main {
-    padding: 30px;
+    padding: 30px;    
     flex-grow: 1;
 }
 
@@ -150,7 +152,7 @@ h1, h2 {
     font-size: 14px;
     font-weight: 600;
     color: #195637;
-}
+} 
 
 .form-group .opcional {
     font-weight: normal;
@@ -184,6 +186,7 @@ h1, h2 {
     cursor: pointer;
     display: inline-flex;
     align-items: center;
+    justify-content: center;
     gap: 8px;
     transition: background 0.3s;
 }
@@ -197,8 +200,9 @@ h1, h2 {
    ========================================================================== */
 .table-container {
     width: 100%;
-    overflow-x: auto;
+    overflow-x: auto; /* Permite rolagem horizontal em telas pequenas */
     margin-top: 15px;
+    border-radius: 8px;
 }
 
 .custom-table {
@@ -206,6 +210,7 @@ h1, h2 {
     border-collapse: collapse;
     text-align: left;
     font-size: 14px;
+    min-width: 600px; /* Garante que a tabela não esmague os dados no celular */
 }
 
 .custom-table th {
@@ -254,3 +259,74 @@ h1, h2 {
 .btn-edit:hover { background-color: #e3f2fd; }
 .btn-delete { color: #c0392b; }
 .btn-delete:hover { background-color: #fce4d6; }
+
+/* ==========================================================================
+   RESPONSIVIDADE (CELULARES E TABLETS)
+   ========================================================================== */
+@media (max-width: 768px) {
+    body {
+        flex-direction: column;
+    }
+
+    /* Transforma a barra lateral em um cabeçalho superior no celular */
+    .sidebar {
+        position: relative;
+        width: 100%;
+        min-height: auto;
+        padding: 15px;
+        border-right: none;
+        border-bottom: 2px solid rgba(25, 86, 55, 0.2);
+    }
+
+    .sidebar-logo {
+        padding-bottom: 10px;
+        margin-bottom: 10px;
+        border-bottom: none;
+    }
+
+    .sidebar-logo img {
+        width: 100px; /* Reduz a logo para poupar espaço vertical */
+    }
+
+    /* Coloca os links do menu lado a lado como "pílulas" */
+    .sidebar nav ul {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 8px;
+    }
+
+    .sidebar nav ul li {
+        margin-bottom: 0;
+    }
+
+    .sidebar nav ul li a {
+        padding: 8px 12px;
+        font-size: 14px;
+        background-color: rgba(25, 86, 55, 0.05); /* Destaca os botões no celular */
+    }
+
+    .sidebar nav ul li a:hover {
+        padding-left: 12px; /* Remove o deslocamento lateral que faz sentido apenas no desktop */
+    }
+
+    /* Ajusta o conteúdo principal para ocupar a largura total */
+    .main-content {
+        margin-left: 0;
+        width: 100%;
+    }
+
+    header {
+        justify-content: center; /* Centraliza o nome do usuário no topo */
+        padding: 10px 15px;
+    }
+
+    main {
+        padding: 15px; /* Reduz o espaço em branco nas laterais */
+    }
+
+    /* Ajustes pontuais de layout para telas estreitas */
+    .btn-primary {
+        width: 100%; /* Botões ocupam toda a largura para facilitar o clique com o dedo */
+    }
+}
