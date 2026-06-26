@@ -1,6 +1,6 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify
 from pymongo import MongoClient
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from bson.objectid import ObjectId
 from werkzeug.security import generate_password_hash, check_password_hash
 from functools import wraps
@@ -8,6 +8,8 @@ import random
 import json
 import os
 from dotenv import load_dotenv
+
+FUSO_BR = timezone(timedelta(hours=-3))
 
 load_dotenv()
 
@@ -286,9 +288,19 @@ def cadastrar_lancamento_caixa():
 @app.route('/vendas')
 @login_required
 def vendas():
-    hoje = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+# Pega a hora atual de Brasília e remove a informação de fuso para virar uma data limpa
+    agora_brasil = datetime.now(FUSO_BR).replace(tzinfo=None)
+    hoje = agora_brasil.replace(hour=0, minute=0, second=0, microsecond=0)
+    
+    # Agora a busca vai funcionar perfeitamente em qualquer hora do dia ou da noite
     vendas_de_hoje = list(caixa_col.find({"categoria": "Venda", "data_lancamento": {"$gte": hoje}}).sort("data_lancamento", -1))
-    return render_template('vendas.html', lista_clientes=list(clientes_col.find().sort("nome", 1)), lista_produtos=list(produtos_col.find().sort("nome", 1)), vendas_hoje=vendas_de_hoje)
+    
+    return render_template(
+        'vendas.html', 
+        lista_clientes=list(clientes_col.find().sort("nome", 1)), 
+        lista_produtos=list(produtos_col.find().sort("nome", 1)), 
+        vendas_hoje=vendas_de_hoje
+    )
 
 @app.route('/registrar_venda', methods=['POST'])
 @login_required
@@ -297,17 +309,40 @@ def registrar_venda():
     cliente_id = request.form.get('cliente_id')
     qtd = float(request.form.get('quantidade'))
     pagamento = request.form.get('forma_pagamento')
+    
     try:
         produto = produtos_col.find_one({'_id': ObjectId(produto_id)})
         cliente = clientes_col.find_one({'_id': ObjectId(cliente_id)})
+        
         if produto:
+            # Tratamento de preço e desconto
             preco_final = float(produto.get('preco').replace('.', '').replace(',', '.')) - (float(produto.get('desconto').replace('.', '').replace(',', '.')) if produto.get('desconto') else 0.0)
-            produtos_col.update_one({'_id': ObjectId(produto_id)}, {'$set': {'quantidade': max(0.0, float(produto.get('quantidade', 0)) - qtd)}})
+            
+            # 1. BAIXA AUTOMÁTICA NO ESTOQUE
+            produtos_col.update_one(
+                {'_id': ObjectId(produto_id)}, 
+                {'$set': {'quantidade': max(0.0, float(produto.get('quantidade', 0)) - qtd)}}
+            )
+            
             nome_cliente = cliente.get('nome') if cliente else "Sem Cadastro"
-            caixa_col.insert_one({"tipo": "entrada", "categoria": "Venda", "descricao": f"Venda de {int(qtd)}x {produto.get('nome')} - Cliente: {nome_cliente} ({pagamento})", "valor": preco_final * qtd, "data_lancamento": datetime.now()})
+            
+            # Garante que a data salva no banco use o horário correto do Brasil
+            agora_brasil = datetime.now(FUSO_BR).replace(tzinfo=None)
+            
+            # 2. CRÉDITO AUTOMÁTICO NO CAIXA
+            caixa_col.insert_one({
+                "tipo": "entrada", 
+                "categoria": "Venda", 
+                "descricao": f"Venda de {int(qtd)}x {produto.get('nome')} - Cliente: {nome_cliente} ({pagamento})", 
+                "valor": preco_final * qtd, 
+                "data_lancamento": agora_brasil # Salvando com a hora certa do Brasil
+            })
+            
             flash(f'Venda de R$ {preco_final * qtd:.2f} registrada com sucesso!', 'success')
-    except:
+    except Exception as e:
+        print(f"Erro ao registrar venda: {e}") # Ajuda a ver o erro no terminal se algo falhar
         flash('Erro ao registrar a venda.', 'error')
+        
     return redirect(url_for('vendas'))
 
 @app.route('/chatbot')
