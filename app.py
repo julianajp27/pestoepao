@@ -389,71 +389,96 @@ def api_chatbot():
     mensagem = data.get('mensagem', '').lower().strip()
     
     # Resposta padrão caso ele não entenda a pergunta
-    resposta = "Desculpe, ainda estou aprendendo! 🌿 Tente me perguntar sobre <b>faturamento</b>, <b>custos</b>, <b>saldo</b>, <b>estoque</b>, <b>produtos</b>, <b>insumos</b> ou <b>clientes</b>."
+    resposta = "Desculpe, ainda estou aprendendo! 🌿 Tente me perguntar sobre <b>vendas de hoje</b>, <b>faturamento do mês</b>, <b>custos</b>, <b>saldo</b>, <b>estoque</b> ou <b>clientes</b>."
 
-    hoje = datetime.now()
+    # Forçando o horário de Brasília para o robô não errar o dia
+    from datetime import datetime, timedelta, timezone
+    FUSO_BR = timezone(timedelta(hours=-3))
+    agora_brasil = datetime.now(FUSO_BR)
 
-    # 1. TELA DE CAIXA: FATURAMENTO / VENDAS (MÊS ATUAL)
-    if 'faturamento' in mensagem or 'vendeu' in mensagem or 'vendas' in mensagem:
+    # 1. TELA DE CAIXA: VENDAS DO DIA (HOJE) -> Precisa vir ANTES da regra do mês!
+    if ('hoje' in mensagem or 'do dia' in mensagem) and any(p in mensagem for p in ['venda', 'vendeu', 'faturamento']):
+        vendas_hoje_lista = list(caixa_col.find({"tipo": "entrada", "categoria": "Venda"}))
+        # Filtra apenas as vendas que têm o mesmo dia, mês e ano de hoje
+        vendas_filtradas = [
+            v for v in vendas_hoje_lista 
+            if v.get('data_lancamento') and 
+            v.get('data_lancamento').day == agora_brasil.day and 
+            v.get('data_lancamento').month == agora_brasil.month and 
+            v.get('data_lancamento').year == agora_brasil.year
+        ]
+        
+        total_hoje = sum(float(v.get('valor', 0)) for v in vendas_filtradas)
+        qtd_vendas = len(vendas_filtradas)
+        total_formatado = f"{total_hoje:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.')
+        
+        if qtd_vendas > 0:
+            resposta = f"Hoje nós já realizamos <b>{qtd_vendas} venda(s)</b>, totalizando um faturamento de <b>R$ {total_formatado}</b>! 🚀"
+        else:
+            resposta = "Ainda não tivemos nenhuma venda registrada no dia de hoje. Vamos torcer! 🤞"
+
+    # 2. TELA DE CAIXA: FATURAMENTO / VENDAS (MÊS ATUAL)
+    elif 'faturamento' in mensagem or 'vendeu' in mensagem or 'vendas' in mensagem:
         vendas_mes = list(caixa_col.find({"tipo": "entrada", "categoria": "Venda"}))
-        total = sum(float(v.get('valor', 0)) for v in vendas_mes if v.get('data_lancamento') and v.get('data_lancamento').month == hoje.month and v.get('data_lancamento').year == hoje.year)
+        total = sum(float(v.get('valor', 0)) for v in vendas_mes if v.get('data_lancamento') and v.get('data_lancamento').month == agora_brasil.month and v.get('data_lancamento').year == agora_brasil.year)
         total_formatado = f"{total:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.')
         resposta = f"O nosso faturamento com vendas neste mês está em <b>R$ {total_formatado}</b>! 💰"
-
-    # 2. TELA DE CAIXA: CUSTOS / GASTOS (MÊS ATUAL)
+        
+    # 3. TELA DE CAIXA: CUSTOS / GASTOS (MÊS ATUAL)
     elif any(palavra in mensagem for palavra in ['custo', 'gasto', 'saida', 'saída', 'despesa']):
         todos_lancamentos = list(caixa_col.find({"tipo": "saida"}))
-        total_custos = sum(float(l.get('valor', 0)) for l in todos_lancamentos if l.get('data_lancamento') and l.get('data_lancamento').month == hoje.month and l.get('data_lancamento').year == hoje.year)
+        total_custos = sum(float(l.get('valor', 0)) for l in todos_lancamentos if l.get('data_lancamento') and l.get('data_lancamento').month == agora_brasil.month and l.get('data_lancamento').year == agora_brasil.year)
         custos_formatado = f"{total_custos:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.')
         resposta = f"Os nossos custos e despesas totais deste mês estão em <b>R$ {custos_formatado}</b>. 💸"
 
-    # 3. TELA DE CAIXA: SALDO GERAL ATUAL (ENTRADAS - SAÍDAS TOTAIS)
+    # 4. TELA DE CAIXA: SALDO GERAL ATUAL (ENTRADAS - SAÍDAS TOTAIS)
     elif 'saldo' in mensagem or 'caixa' in mensagem or 'financeiro' in mensagem:
         lancamentos = list(caixa_col.find())
         total_entradas = sum(float(l.get('valor', 0)) for l in lancamentos if l.get('tipo') == 'entrada')
         total_saidas = sum(float(l.get('valor', 0)) for l in lancamentos if l.get('tipo') == 'saida')
         saldo = total_entradas - total_saidas
         saldo_formatado = f"{saldo:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.')
-        resposta = f"O saldo atual em caixa é de <b>R$ {saldo_formatado}</b> (Total Entradas: R$ {total_entradas:,.2f} | Total Saídas: R$ {total_saidas:,.2f}). 📊".replace(',', 'X').replace('.', ',').replace('X', '.')
+        total_entradas_f = f"{total_entradas:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.')
+        total_saidas_f = f"{total_saidas:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.')
+        resposta = f"O saldo geral atual em caixa é de <b>R$ {saldo_formatado}</b> (Total Entradas: R$ {total_entradas_f} | Total Saídas: R$ {total_saidas_f}). 📊"
 
-    # 4. TELAS DE ESTOQUE: ALERTAS DE FALTA (PRODUTOS E INSUMOS)
+    # 5. TELAS DE ESTOQUE: ALERTAS DE FALTA (PRODUTOS E INSUMOS)
     elif 'falta' in mensagem or 'acabando' in mensagem or 'alerta' in mensagem:
         produtos = list(produtos_col.find())
         insumos = list(insumos_col.find())
         em_falta = [p['nome'] for p in produtos if float(p.get('quantidade', 0)) <= float(p.get('alerta_minimo', 0))]
         insumos_falta = [i['nome'] for i in insumos if float(i.get('quantidade', 0)) <= float(i.get('alerta_minimo', 0))]
         alertas = em_falta + insumos_falta
-        
         if alertas:
-            resposta = f"Atenção! ⚠️ Os seguintes itens estão precisando de reposição: <b>{', '.join(alertas)}</b>."
+            resposta = f"Atenção! ⚠️ Os seguintes itens estão precisando de reposição urgente: <b>{', '.join(alertas)}</b>."
         else:
-            resposta = "Boas notícias! 🎉 O estoque está em dia. Nenhum produto ou insumo está abaixo do mínimo."
+            resposta = "Boas notícias! 🎉 O estoque está em dia. Nenhum produto ou insumo está abaixo do nível de alerta."
 
-    # 5. TELA DE PRODUTOS: LISTAGEM / TOTAL DE PRODUTOS
+    # 6. TELA DE PRODUTOS: LISTAGEM / TOTAL DE PRODUTOS
     elif 'produto' in mensagem:
         total_produtos = produtos_col.count_documents({})
         lista_p = list(produtos_col.find().sort("nome", 1))
-        nomes_p = [f"{p['nome']} ({int(p['quantidade'])} un)" for p in lista_p[:5]] # Mostra os primeiros 5
+        nomes_p = [f"{p['nome']} ({int(p.get('quantidade', 0))} un)" for p in lista_p[:5]] # Mostra os primeiros 5
         extensao = f"<br>Exemplos em estoque: {', '.join(nomes_p)}" if nomes_p else ""
         resposta = f"Temos <b>{total_produtos} tipos de produtos</b> cadastrados no sistema.{extensao} 🥖"
 
-    # 6. TELA DE INSUMOS: LISTAGEM / TOTAL DE INSUMOS
+    # 7. TELA DE INSUMOS: LISTAGEM / TOTAL DE INSUMOS
     elif 'insumo' in mensagem or 'materia' in mensagem or 'matéria' in mensagem:
         total_insumos = insumos_col.count_documents({})
         lista_i = list(insumos_col.find().sort("nome", 1))
-        nomes_i = [f"{i['nome']} ({i['quantidade']} {i['unidade']})" for i in lista_i[:5]] # Mostra os primeiros 5
+        nomes_i = [f"{i['nome']} ({i.get('quantidade', 0)} {i.get('unidade', '')})" for i in lista_i[:5]] # Mostra os primeiros 5
         extensao = f"<br>Exemplos em estoque: {', '.join(nomes_i)}" if nomes_i else ""
         resposta = f"Temos <b>{total_insumos} insumos</b> registrados no banco.{extensao} 🌿"
 
-    # 7. TELA DE CLIENTES: TOTAL DE CLIENTES
+    # 8. TELA DE CLIENTES: TOTAL DE CLIENTES
     elif 'cliente' in mensagem:
         total_clientes = clientes_col.count_documents({})
         resposta = f"Temos um total de <b>{total_clientes} clientes</b> cadastrados na nossa base! 👥"
         
-    # 8. REGRAS DE AJUDA E SAUDAÇÕES
+    # 9. REGRAS DE AJUDA E SAUDAÇÕES
     elif any(palavra in mensagem for palavra in ['ajuda', 'fazer', 'bom dia', 'olá', 'oi', 'tarde', 'noite']):
-        resposta = ("Olá! Eu sou a assistente da Pesto e Pão. Posso te ajudar com dados de qualquer tela:<br><br>"
-                    "👉 <b>Caixa:</b> Pergunte sobre <i>'faturamento'</i>, <i>'custos'</i> ou <i>'saldo'</i>.<br>"
+        resposta = ("Olá! Eu sou a assistente da Pesto e Pão. Posso te ajudar a consultar seus dados rapidamente:<br><br>"
+                    "👉 <b>Vendas e Caixa:</b> Pergunte sobre <i>'vendas de hoje'</i>, <i>'faturamento do mês'</i>, <i>'custos'</i> ou <i>'saldo'</i>.<br>"
                     "👉 <b>Estoque:</b> Pergunte por <i>'produtos'</i>, <i>'insumos'</i> ou o que está em <i>'falta'</i>.<br>"
                     "👉 <b>Clientes:</b> Pergunte por <i>'clientes cadastrados'</i>.")
 
