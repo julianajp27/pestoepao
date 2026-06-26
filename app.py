@@ -329,19 +329,48 @@ def registrar_venda():
             # Garante que a data salva no banco use o horário correto do Brasil
             agora_brasil = datetime.now(FUSO_BR).replace(tzinfo=None)
             
-            # 2. CRÉDITO AUTOMÁTICO NO CAIXA
+            # 2. CRÉDITO AUTOMÁTICO NO CAIXA (Agora com rastreio para cancelamento)
             caixa_col.insert_one({
                 "tipo": "entrada", 
                 "categoria": "Venda", 
                 "descricao": f"Venda de {int(qtd)}x {produto.get('nome')} - Cliente: {nome_cliente} ({pagamento})", 
                 "valor": preco_final * qtd, 
-                "data_lancamento": agora_brasil # Salvando com a hora certa do Brasil
+                "data_lancamento": agora_brasil,
+                "produto_id": produto_id,  # NOVO: Necessário para o estorno
+                "quantidade": qtd          # NOVO: Necessário para devolver ao estoque
             })
             
             flash(f'Venda de R$ {preco_final * qtd:.2f} registrada com sucesso!', 'success')
     except Exception as e:
         print(f"Erro ao registrar venda: {e}") # Ajuda a ver o erro no terminal se algo falhar
         flash('Erro ao registrar a venda.', 'error')
+        
+    return redirect(url_for('vendas'))
+
+@app.route('/cancelar_venda/<id_venda>', methods=['POST'])
+@login_required
+def cancelar_venda(id_venda):
+    try:
+        # 1. Encontra o registro da venda no caixa
+        venda = caixa_col.find_one({"_id": ObjectId(id_venda)})
+        
+        if venda:
+            # 2. Verifica se a venda tem os dados de rastreio para devolver ao estoque
+            if "produto_id" in venda and "quantidade" in venda:
+                produtos_col.update_one(
+                    {"_id": ObjectId(venda["produto_id"])},
+                    {"$inc": {"quantidade": venda["quantidade"]}} # O $inc positivo soma de volta no estoque
+                )
+            
+            # 3. Deleta o registro financeiro do caixa
+            caixa_col.delete_one({"_id": ObjectId(id_venda)})
+            flash('Venda cancelada! Valor removido do caixa e produto devolvido ao estoque.', 'success')
+        else:
+            flash('Venda não encontrada.', 'error')
+            
+    except Exception as e:
+        print(f"Erro ao cancelar: {e}")
+        flash('Erro ao cancelar a venda.', 'error')
         
     return redirect(url_for('vendas'))
 

@@ -80,6 +80,7 @@
                     <th>Hora</th>
                     <th>Descrição da Venda</th>
                     <th>Valor Total</th>
+                    <th>Ações</th>
                 </tr>
             </thead>
             <tbody>
@@ -88,10 +89,18 @@
                     <td>{{ venda.data_lancamento.strftime('%H:%M') }}</td>
                     <td>{{ venda.descricao }}</td>
                     <td style="font-weight: bold; color: #27ae60;">R$ {{ "%.2f"|format(venda.valor)|replace('.', ',') }}</td>
+                    
+                    <td style="text-align: center;">
+                        <form action="{{ url_for('cancelar_venda', id_venda=venda._id) }}" method="POST" style="display:inline;">
+                            <button type="submit" class="btn-icon btn-delete" onclick="return confirm('Tem certeza que deseja CANCELAR esta venda? O dinheiro sairá do caixa e o produto voltará para o estoque.')" title="Cancelar Venda">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
+                        </form>
+                    </td>
                 </tr>
                 {% else %}
                 <tr>
-                    <td colspan="3" style="text-align: center; color: #7f8c8d;">Nenhuma venda registrada no dia de hoje ainda.</td>
+                    <td colspan="4" style="text-align: center; color: #7f8c8d;">Nenhuma venda registrada no dia de hoje ainda.</td>
                 </tr>
                 {% endfor %}
             </tbody>
